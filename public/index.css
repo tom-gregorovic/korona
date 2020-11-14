@@ -1,0 +1,41 @@
+#CovidTable {
+  font-size: 13px;
+  font-family: sans-serif;
+}
+
+table {
+  border-spacing: 0;
+  width: 100%;
+}
+
+p, h3 {
+  width: 100%;
+  text-align: center;
+}
+
+small {
+  display: inline-block;
+  width: 100%;
+  text-align: end;
+}
+
+th {
+  background-color: #4478c7;
+  color: white;
+}
+
+th, td {
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+tr:hover {
+  background-color: #ffbd66;
+}
+
+.cell-number {
+  text-align: end;
+}
