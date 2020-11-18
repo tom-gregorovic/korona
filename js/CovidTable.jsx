@@ -14,6 +14,8 @@ const CovidTable = (props) => {
   const [loading, setLoading] = useState();
   const [error, setError] = useState();
   const [data, setData] = useState();
+  const [europe, setEurope] = useState();
+  const [world, setWorld] = useState();
 
   const fetchData = () => {
     setError('');
@@ -146,12 +148,12 @@ const CovidTable = (props) => {
     <div id="CovidTable">
       <Table columns={columns} data={tableData.filter(r => favourite.indexOf(r.country) >= 0)} />
       <Info/>
-      <h3>Evropa</h3>
-      <Table columns={columns} data={tableData.filter(r => r.continent == "Europe")} />
-      <Info/>
-      <h3>Celý svět</h3>
-      <Table columns={columns} data={tableData} />
-      <Info/>
+      <h3><a href="#" onClick={() => setEurope(!europe)}>Evropa</a></h3>
+      {!!europe && <><Table columns={columns} data={tableData.filter(r => r.continent == "Europe")} />
+      <Info/></>}
+      <h3><a href="#" onClick={() => setWorld(!world)}>Celý svět</a></h3>
+      {!!world && <><Table columns={columns} data={tableData} />
+      <Info/></>}
       <br/><small>Data © ECDC [2005-2019]</small>
     </div>
   );
