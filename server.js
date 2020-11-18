@@ -31,6 +31,9 @@ const getData = () => new Promise((resolve, reject) => {
         const countryData = rawData.filter(r => r[6] == country);
         var countryDataToday = countryData[0];
 
+        const date = countryDataToday[0].slice(6, 10) + '/' + countryDataToday[0].slice(3, 5) + '/' + countryDataToday[0].slice(0, 2);
+        const dataDay = Math.floor(new Date() / (24 * 60 *60 * 1000)) - Math.floor(new Date(date) / (24 * 60 *60 * 1000))
+
         var day = 0;
         while ((!countryDataToday[4] || !parseInt(countryDataToday[4])) && day < countryData.length - 1) {
           day++;
@@ -56,7 +59,7 @@ const getData = () => new Promise((resolve, reject) => {
         const cases7DA = Math.round(cases7D / 7 * 100) / 100;
         const rSimple = cases7_14D > 0 ? Math.round(cases7D / cases7_14D * 100) / 100 : null;
 
-        return { country, day, continent: countryData[0][10], cases, deaths, casesRel, deathsRel, casesRWA, cases7DA, rSimple };
+        return { country, day: day + dataDay, continent: countryData[0][10], cases, deaths, casesRel, deathsRel, casesRWA, cases7DA, rSimple };
       }
     );
     lastDataDate = new Date();
