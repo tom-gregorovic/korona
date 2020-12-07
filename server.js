@@ -9,9 +9,90 @@ const app = express();
 var lastData = null; // array of Covid data per state
 var lastDataDate = null;
 
-const dataUrl = 'https://opendata.ecdc.europa.eu/covid19/casedistribution/csv/data.csv';
+const parse = (a, i) => {
+  if (!a || !a.length || a.length <= i || !a[i]) {
+    return 0;
+  }
+
+  return parseInt(a[i]);
+}
+
+const swapDate = d => d ? d.slice(3, 5) + '/' + d.slice(0, 2) + '/' + d.slice(6, 10) : d;
+
+const csv = res => 
+  res.text().then(text => text.split("\n").slice(1).map(l => l.trim().split(";").map(v => v.trim())));
+
+const group = (xs, key, sum) => 
+  Object.values(xs.reduce((rv, x) => {
+    (rv[x[key]] = rv[x[key]] || []).push(x);
+    return rv;
+  }, {})).map(i => [i[0][0], i.reduce((s, v) => s + parse(v, sum), 0)]);
+
+const dataSources = [{ country: "Česká republika", continent: "Evropa", population: 10690000,
+  url: "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json",
+  data: r => r.json().then(d => d.data), date: d => new Date(d.datum), cases: d => d.prirustkovy_pocet_nakazenych},
+  { country: "Slovensko", continent: "Evropa", population: 5458000,
+  url: "https://mapa.covid.chat/export/csv",
+  data: r => csv(r), date: d => new Date(swapDate(d[0])), cases: d => parse(d, 5)},
+  { country: "Rakousko", continent: "Evropa", population: 8859000,
+  url: "https://covid19-dashboard.ages.at/data/CovidFaelle_Timeline.csv",
+  data: r => csv(r).then(a => group(a, 0, 4)), date: d => new Date(swapDate(d[0])), cases: d => parse(d, 1)},
+];
 
 const getData = () => new Promise((resolve, reject) => {
+  if (lastData && lastDataDate && ((new Date() - lastDataDate) / (60 * 60 * 1000) < 0.25)) { 
+    return resolve(lastData);
+  }
+
+  const dataPromises = dataSources.map(info => fetch(info.url).then(r => info.data(r))
+    .then(d => Promise.resolve(d.map(i => { return { info, date: info.date(i), cases: info.cases(i) }; })))
+    .catch(e => { return { info, error: e.toString() }; } ));
+
+  return Promise.all(dataPromises).then(countries => {
+    lastData = countries.filter(c => c.length > 0).map(
+      countryData => {
+        countryData.sort((a, b) => b.date - a.date);
+        var countryDataToday = countryData[0];
+
+        const date = countryDataToday.date;
+        const dataDay = Math.floor((new Date() - new Date(date)) / (24 * 60 *60 * 1000));
+
+        var day = 0;
+        while (!countryDataToday.cases && day < countryData.length - 1) {
+          day++;
+          countryDataToday = countryData[day];
+        }
+
+        const countryDataWeekAgo = day + 7 < countryData.length ? countryData[day + 7] : [];
+
+        const population = countryDataToday.info.population;
+
+        const cases = countryDataToday.cases;
+
+        const casesRel = cases && population ? Math.round(cases / (population / 100000) * 100) / 100 : null;
+
+        const casesRWA = cases && countryDataWeekAgo.cases ? 
+          Math.round(cases / countryDataWeekAgo.cases * 100) : null;
+
+        const cases7D = countryData.slice(day, day + 7).reduce((res, v) => res + v.cases, 0);
+        const cases7_14D = countryData.slice(day + 5, day + 12).reduce((res, v) => res + v.cases, 0);
+
+        const cases7DA = Math.round(cases7D / 7 * 100) / 100;
+        const rSimple = cases7_14D > 0 ? Math.round(cases7D / cases7_14D * 100) / 100 : null;
+
+        return { country: countryData[0].info.country, day: day + dataDay, continent: countryData[0].info.continent, cases, casesRel, casesRWA, cases7DA, rSimple,
+        error: countryData[0].error };
+      }
+    );
+    lastDataDate = new Date();
+
+    return resolve(lastData);
+  }).catch(e => console.error(e));
+});
+
+const dataUrl = 'https://opendata.ecdc.europa.eu/covid19/casedistribution/csv/data.csv';
+
+const getDataECDC = () => new Promise((resolve, reject) => {
   if (lastData && lastDataDate && ((new Date() - lastDataDate) / (60 * 60 * 1000) < 2)) { 
     return resolve(lastData);
   }

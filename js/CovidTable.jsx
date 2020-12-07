@@ -2,13 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTable, useSortBy } from 'react-table';
 import { fetch } from 'whatwg-fetch';
 
-const favourite = ['Czechia', 'Slovakia', 'Austria', 'Germany', 'Poland', 'Hungary', 
-'Spain', 'Italy', 'United_Kingdom', 'France',
-'Sweden', 'Russia', 'United_States_of_America'];
-
-const names = ['Česká republika', 'Slovensko', 'Rakousko', 'Něměcko', 'Polsko', 'Maďarsko', 
+const favourite = ['Česká republika', 'Slovensko', 'Rakousko', 'Něměcko', 'Polsko', 'Maďarsko', 
 'Španělsko', 'Itálie', 'Velká Britanie', 'Francie',
 'Švédsko', 'Rusko', 'USA'];
+
+const names = [];
 
 const CovidTable = (props) => {
   const [loading, setLoading] = useState();
@@ -26,7 +24,7 @@ const CovidTable = (props) => {
 
       json.forEach(r => {
         const index = favourite.indexOf(r.country);
-        r.name = (index >= 0) ? names[index] : r.country.replaceAll("_", " ");
+        r.name = r.country.replaceAll("_", " ");
 
         if (r.day) {
         r.name = <>{r.name}<sup>{'-' + r.day}</sup></>;
@@ -149,7 +147,7 @@ const CovidTable = (props) => {
       <Table columns={columns} data={tableData.filter(r => favourite.indexOf(r.country) >= 0)} />
       <Info/>
       <h3><a href="#" onClick={() => setEurope(!europe)}>Evropa</a></h3>
-      {!!europe && <><Table columns={columns} data={tableData.filter(r => r.continent == "Europe")} />
+      {!!europe && <><Table columns={columns} data={tableData.filter(r => r.continent == "Evropa")} />
       <Info/></>}
       <h3><a href="#" onClick={() => setWorld(!world)}>Celý svět</a></h3>
       {!!world && <><Table columns={columns} data={tableData} />
