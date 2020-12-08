@@ -16,8 +16,12 @@ const parse = (a, i) => {
 
   return parseInt(a[i]);
 }
-
-const swapDate = d => d ? d.slice(3, 5) + '/' + d.slice(0, 2) + '/' + d.slice(6, 10) : d;
+const nowDate = (days = 0) => {
+  const now = new Date(new Date() - days * 24 * 60 * 60 * 1000);
+  return now.getFullYear().toString() + "-" + ("0" + (now.getMonth() + 1).toString()).slice(-2) + "-" + ("0" + now.getDate().toString()).slice(-2);
+};
+const swapDate = d => d ? d.toString().slice(3, 5) + '/' + d.toString().slice(0, 2) + '/' + d.toString().slice(6, 10) : d;
+const fixDate = d => d ? d.toString().slice(4, 6) + '/' + d.toString().slice(6, 8) + '/' + d.toString().slice(0, 4) : d;
 
 const csv = res => 
   res.text().then(text => text.split("\n").slice(1).map(l => l.trim().split(";").map(v => v.trim())));
@@ -28,15 +32,31 @@ const group = (xs, key, sum) =>
     return rv;
   }, {})).map(i => [i[0][0], i.reduce((s, v) => s + parse(v, sum), 0)]);
 
-const dataSources = [{ country: "Česká republika", continent: "Evropa", population: 10690000,
-  url: "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json",
+const narrativa = (country) => { return { 
+  url: () => `https://api.covid19tracking.narrativa.com/api/country/${country}?date_from=${nowDate(20)}&date_to=${nowDate()}`,
+  data: r => r.json().then(d => { return Object.values(d.dates).slice(0, -1); }), date: d => new Date(d.info.date.replace("CET", "")), cases: d => d.countries[country].today_new_open_cases
+}; };
+
+const dataSources = [
+  { country: "Česká republika", continent: "Evropa", population: 10690000,
+  url: () => "https://onemocneni-aktualne.mzcr.cz/api/v2/covid-19/nakaza.json",
   data: r => r.json().then(d => d.data), date: d => new Date(d.datum), cases: d => d.prirustkovy_pocet_nakazenych},
+  { country: "USA", continent: "Amerika", population: 328200000,
+  url: () => "https://api.covidtracking.com/v1/us/daily.json",
+  data: r => r.json().then(d => d), date: d => new Date(fixDate(d.date)), cases: d => d.positiveIncrease},
+  { country: "Německo", continent: "Evropa", population: 83020000,
+  url: () => 'https://services7.arcgis.com/mOBPykOjAyBO2ZKk/arcgis/rest/services/RKI_COVID19/FeatureServer/0/query?f=json&where=Geschlecht<>%27unbekannt%27%20AND%20Altersgruppe<>%27unbekannt%27&returnGeometry=false&spatialRel=esriSpatialRelIntersects&outFields=*&groupByFieldsForStatistics=Meldedatum&orderByFields=Meldedatum%20desc&outStatistics=%5B%7B"statisticType"%3A"sum"%2C"onStatisticField"%3A"AnzahlFall"%2C"outStatisticFieldName"%3A"cases"%7D%5D&cacheHint=true',
+  data: r => r.json().then(d => d.features), date: d => new Date(d.attributes.Meldedatum), cases: d => d.attributes.cases},
   { country: "Slovensko", continent: "Evropa", population: 5458000,
-  url: "https://mapa.covid.chat/export/csv",
+  url: () => "https://mapa.covid.chat/export/csv",
   data: r => csv(r), date: d => new Date(swapDate(d[0])), cases: d => parse(d, 5)},
   { country: "Rakousko", continent: "Evropa", population: 8859000,
-  url: "https://covid19-dashboard.ages.at/data/CovidFaelle_Timeline.csv",
+  url: () => "https://covid19-dashboard.ages.at/data/CovidFaelle_Timeline.csv",
   data: r => csv(r).then(a => group(a, 0, 4)), date: d => new Date(swapDate(d[0])), cases: d => parse(d, 1)},
+  { country: "Rusko", continent: "Evropa", population: 146100000, ...narrativa("Russia") },
+  { country: "Polsko", continent: "Evropa", population: 37970000, ...narrativa("Poland") },
+  { country: "Maďarsko", continent: "Evropa", population: 9770000, ...narrativa("Hungary") },
+  { country: "Švédsko", continent: "Evropa", population: 10230000, ...narrativa("Sweden") },
 ];
 
 const getData = () => new Promise((resolve, reject) => {
@@ -44,9 +64,9 @@ const getData = () => new Promise((resolve, reject) => {
     return resolve(lastData);
   }
 
-  const dataPromises = dataSources.map(info => fetch(info.url).then(r => info.data(r))
-    .then(d => Promise.resolve(d.map(i => { return { info, date: info.date(i), cases: info.cases(i) }; })))
-    .catch(e => { return { info, error: e.toString() }; } ));
+  const dataPromises = dataSources.map(info => { console.log(info.url()); return fetch(info.url()).then(r => info.data(r))
+    .then(d => { console.log(info.url(), d.length); return Promise.resolve(d.map(i => { return { info, date: info.date(i), cases: info.cases(i) }; }));})
+    .catch(e => { return { info, error: e.toString() }; } ); });
 
   return Promise.all(dataPromises).then(countries => {
     lastData = countries.filter(c => c.length > 0).map(

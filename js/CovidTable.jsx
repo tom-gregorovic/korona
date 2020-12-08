@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTable, useSortBy } from 'react-table';
 import { fetch } from 'whatwg-fetch';
 
-const favourite = ['Česká republika', 'Slovensko', 'Rakousko', 'Něměcko', 'Polsko', 'Maďarsko', 
+const favourite = ['Česká republika', 'Slovensko', 'Rakousko', 'Německo', 'Polsko', 'Maďarsko', 
 'Španělsko', 'Itálie', 'Velká Britanie', 'Francie',
 'Švédsko', 'Rusko', 'USA'];
 
