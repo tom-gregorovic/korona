@@ -64,7 +64,7 @@ const getData = () => new Promise((resolve, reject) => {
     return resolve(lastData);
   }
 
-  const dataPromises = dataSources.map(info => { console.log(info.url()); return fetch(info.url()).then(r => info.data(r))
+  const dataPromises = dataSources.map(info => { console.log(info.url()); return fetch(info.url(), { timeout: 20000 }).then(r => info.data(r))
     .then(d => { console.log(info.url(), d.length); return Promise.resolve(d.map(i => { return { info, date: info.date(i), cases: info.cases(i) }; }));})
     .catch(e => { return { info, error: e.toString() }; } ); });
 
