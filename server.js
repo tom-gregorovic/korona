@@ -34,7 +34,7 @@ const group = (xs, key, sum) =>
 
 const narrativa = (country) => { return { 
   url: () => `https://api.covid19tracking.narrativa.com/api/country/${country}?date_from=${nowDate(20)}&date_to=${nowDate()}`,
-  data: r => r.json().then(d => { return Object.values(d.dates).slice(0, -1); }), date: d => new Date(d.info.date.replace("CET", "")), cases: d => d.countries[country].today_new_open_cases
+  data: r => r.json().then(d => { return Object.values(d.dates).slice(0, -1); }), date: d => new Date(d.info.date.replace("CET", "")), cases: d => d.countries[country].today_new_confirmed
 }; };
 
 const dataSources = [

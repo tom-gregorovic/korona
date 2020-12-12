@@ -152,7 +152,7 @@ const CovidTable = (props) => {
       <h3><a href="#" onClick={() => setWorld(!world)}>Celý svět</a></h3>
       {!!world && <><Table columns={columns} data={tableData} />
       <Info/></>}
-      <br/><small>Data © ECDC [2005-2019]</small>
+      <br/><small>Data Johns Hopkins University, CDC, Narrativ, NCZL, ÚZIS, ECDC</small>
     </div>
   );
 }
